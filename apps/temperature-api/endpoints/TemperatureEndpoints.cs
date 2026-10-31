@@ -6,15 +6,17 @@ public static class TemperatureEndpoints
 {
     public static void MapTemperatureEndpoints(this WebApplication app)
     {
-        app.MapGet("/temperature", (string location) =>
-        {
-            const double min = -40.0;
-            const double max = 40.0;
-            var t = Math.Round(min + Random.Shared.NextDouble() * (max - min), 1);
+        var group = app.MapGroup("/temperature");
+        group.MapGet("/", (string location) => GenerateRandomTemperatureDto(location: location));
+        group.MapGet("/{sensorId}", (string sensorId) => GenerateRandomTemperatureDto(sensorId: sensorId));
+    }
 
-            var dto = new TemperatureDto(t, "Celsius", DateTime.UtcNow, location, "Active", "1", "Thermometer", "Temperature sensor");
-            return dto;
+    public static TemperatureDto GenerateRandomTemperatureDto(string? location = null, string? sensorId = null)
+    {
+        const double min = -40.0;
+        const double max = 40.0;
+        var t = Math.Round(min + Random.Shared.NextDouble() * (max - min), 1);
 
-        }).WithName("temperature");
+        return new TemperatureDto(t, "Celsius", DateTime.UtcNow, location, "Active", sensorId, "Thermometer", "Temperature measurement");
     }
 }

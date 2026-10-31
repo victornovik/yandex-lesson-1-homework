@@ -11,12 +11,12 @@
       "name": "Temperature API",
       "item": [
         {
-          "name": "Get Temperature",
+          "name": "Get Temperature by Location",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{temperatureUrl}}/temperature?location=kitchen",
+              "raw": "{{temperatureUrl}}/temperature?location=banya",
               "host": [
                 "{{temperatureUrl}}"
               ],
@@ -26,7 +26,32 @@
               "query": [
                 {
                   "key": "location",
-                  "value": "kitchen"
+                  "value": "banya"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Temperature by Sensor ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{temperatureUrl}}/temperature/555",
+              "host": [
+                "{{temperatureUrl}}"
+              ],
+              "path": [
+                "temperature",
+                "555"
+              ],
+              "query": [
+                {
+                  "key": "location",
+                  "value": "banya",
+                  "disabled": true
                 }
               ]
             }
@@ -106,7 +131,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n    \"name\": \"Kitchen humidity\",\n    \"type\": \"humidity\",\n    \"location\": \"Kitchen\",\n    \"unit\": \"%\"\n}",
+          "raw": "{\n    \"name\": \"Banya temperature\",\n    \"type\": \"temperature\",\n    \"location\": \"Banya\",\n    \"unit\": \"°C\"\n}",
           "options": {
             "raw": {
               "language": "text"
