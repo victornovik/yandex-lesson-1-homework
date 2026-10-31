@@ -1,0 +1,6 @@
+@temperature_api_HostAddress = http://localhost:8082
+
+GET {{temperature_api_HostAddress}}/temperature/
+Accept: application/json
+
+###
