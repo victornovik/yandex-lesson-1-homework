@@ -7,16 +7,26 @@ public static class TemperatureEndpoints
     public static void MapTemperatureEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/temperature");
-        group.MapGet("/", (string location) => GenerateRandomTemperatureDto(location: location));
-        group.MapGet("/{sensorId}", (string sensorId) => GenerateRandomTemperatureDto(sensorId: sensorId));
+
+        // GET /temperature?location=Banya
+        group.MapGet("/", (string location) => GenerateRandomTemperature(location: location));
+
+        // GET /temperature/555
+        group.MapGet("/{sensorId}", (string sensorId) => GenerateRandomTemperature(sensorId: sensorId));
     }
 
-    public static TemperatureDto GenerateRandomTemperatureDto(string? location = null, string? sensorId = null)
+    public static TemperatureDto GenerateRandomTemperature(string? location = null, string? sensorId = null)
     {
-        const double min = -40.0;
-        const double max = 40.0;
-        var t = Math.Round(min + Random.Shared.NextDouble() * (max - min), 1);
+        var t = Math.Round(18 + Random.Shared.NextDouble() * 10, 1);
 
-        return new TemperatureDto(t, "Celsius", DateTime.UtcNow, location, "Active", sensorId, "Thermometer", "Temperature measurement");
+        return new TemperatureDto(
+            Value: t,
+            Unit: "°C",
+            Timestamp: DateTime.UtcNow,
+            Location: location,
+            Status: "Active",
+            SensorId: sensorId,
+            SensorType: "Temperature",
+            Description: $"Temperature of {location ?? $"sensor: {sensorId}"}");
     }
 }
