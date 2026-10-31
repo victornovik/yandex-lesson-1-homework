@@ -19,6 +19,22 @@ public static class TemperatureEndpoints
     {
         var t = Math.Round(18 + Random.Shared.NextDouble() * 10, 1);
 
+        location ??= sensorId switch
+        {
+            "1" => "Living Room",
+            "2" => "Bedroom",
+            "3" => "Kitchen",
+            _ => "Unknown"
+        };
+
+        sensorId ??= location switch
+        {
+            "Living Room" =>"1",
+            "Bedroom" => "2",
+            "Kitchen" => "3",
+            _ => "0"
+        };
+
         return new TemperatureDto(
             Value: t,
             Unit: "°C",
@@ -27,6 +43,6 @@ public static class TemperatureEndpoints
             Status: "Active",
             SensorId: sensorId,
             SensorType: "Temperature",
-            Description: $"Temperature of {location ?? $"sensor: {sensorId}"}");
+            Description: $"Temperature of {location}");
     }
 }

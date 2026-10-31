@@ -161,59 +161,15 @@
 - [home-management-service.yaml](docs/OpenAPI/home-management-service.yaml)
 - [telemetry-service.yaml](docs/OpenAPI/telemetry-service.yaml)
 
-🙏 К сожалению, успел описать только 4 сервиса и только самые основные операции для иллюстрации.
+🙏 К сожалению, успел описать только 4 сервиса и основные операции для иллюстрации.
 
 # Задание 5. Работа с docker и docker-compose
 
-Перейдите в apps.
+Cделал сервис `temperature-api`на C# .NET Core 10 с ендпойнтами
 
-Там находится приложение-монолит для работы с датчиками температуры. В README.md описано как запустить решение.
+- Get Temperature by Location - `/temperature?location=banya`
+- Get Temperature by Sensor ID - `/temperature/1`
 
-Вам нужно:
+Для проверки используйте мою коллекцию [Smart Home Sensor API](apps/smarthome-api.postman_collection.json)
 
-1. сделать простое приложение temperature-api на любом удобном для вас языке программирования, которое при запросе /temperature?location= будет отдавать рандомное значение температуры.
-
-Locations - название комнаты, sensorId - идентификатор названия комнаты
-
-```
-	// If no location is provided, use a default based on sensor ID
-	if location == "" {
-		switch sensorID {
-		case "1":
-			location = "Living Room"
-		case "2":
-			location = "Bedroom"
-		case "3":
-			location = "Kitchen"
-		default:
-			location = "Unknown"
-		}
-	}
-
-	// If no sensor ID is provided, generate one based on location
-	if sensorID == "" {
-		switch location {
-		case "Living Room":
-			sensorID = "1"
-		case "Bedroom":
-			sensorID = "2"
-		case "Kitchen":
-			sensorID = "3"
-		default:
-			sensorID = "0"
-		}
-	}
-```
-
-2. Приложение следует упаковать в Docker и добавить в docker-compose. Порт по умолчанию должен быть 8081
-
-3. Кроме того для smart_home приложения требуется база данных - добавьте в docker-compose файл настройки для запуска postgres с указанием скрипта инициализации ./smart_home/init.sql
-
-Для проверки можно использовать Postman коллекцию smarthome-api.postman_collection.json и вызвать:
-
-- Create Sensor
-- Get All Sensors
-
-Должно при каждом вызове отображаться разное значение температуры
-
-Ревьюер будет проверять точно так же.
+Приложение оформлено в Docker для деплоймента, добавлено в [docker-compose](apps/docker-compose.yml) и слушает порт **8081**
