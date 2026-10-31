@@ -1,0 +1,26 @@
+@startuml
+title Home Management Service — C4 Component Diagram
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container(apiGw, "API Gateway", "YARP", "Запросы управления домом")
+Container(devMgmt, "Device Management Service", "ASP.NET Core", "Проверяет доступ к устройствам дома")
+Container(autoSvc, "Automation Service", "ASP.NET Core", "Проверяет доступ к сценариям дома")
+Container(teleSvc, "Telemetry Service", "ASP.NET Core", "Проверяет доступ к телеметрии дома")
+ContainerDb(homeDb, "Home DB", "PostgreSQL", "Дома, комнаты, участники управления домом")
+
+Container_Boundary(homeSvc, "Home Management Service — .NET") {
+  Component(api, "Home API", "ASP.NET Core", "CRUD операций над домом")
+  Component(memMng, "Home Membership Manager", "C#", "Проверяет права владельца и участников")
+  Component(orm, "Home Persistence", "EF Core / Npgsql")
+}
+
+Rel(apiGw, api, "Управляет домом и составом участников", "REST")
+Rel(devMgmt, api, "Проверяет доступ к дому и операции", "REST")
+Rel(autoSvc, api, "Проверяет доступ к сценарию дома", "REST")
+Rel(teleSvc, api, "Проверяет право просмотра дома", "REST")
+Rel(api, memMng, "Авторизует операцию")
+Rel(memMng, orm, "Читает права и роли")
+Rel(orm, homeDb, "Читает / пишет", "EF Core / Npgsql")
+
+@enduml

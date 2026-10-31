@@ -1,0 +1,26 @@
+@startuml
+title Telemetry Service — C4 Component Diagram
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container(apiGw, "API Gateway", "YARP", "Запросы показаний и истории")
+Container(homeSvc, "Home Management Service", "ASP.NET Core", "Права просмотра дома")
+ContainerQueue(kafka, "Message Broker", "Kafka", "Поток телеметрии от Device Gateway Service")
+ContainerDb(teleDb, "Telemetry DB", "PostgreSQL", "Временные ряды")
+
+Container_Boundary(teleSvc, "Telemetry Service") {
+  Component(api, "Telemetry API", "ASP.NET Core", "Чтение телеметрии")
+  Component(teleConsumer, "Telemetry Consumer", "Kafka / BackgroundService", "Потребитель событий телеметрии. Собирает пакеты для пакетной записи в БД")
+  Component(queries, "Telemetry Queries", "C#", "Вытаскивает свежие показания и историю показаний")
+  Component(orm, "Persistence", "EF Core / Npgsql")
+}
+
+Rel(apiGw, api, "Текущие показания и история", "REST")
+Rel(api, homeSvc, "Проверяет право просмотра дома", "HTTPS / REST")
+Rel(api, queries, "Запрашивает данные")
+Rel(kafka, teleConsumer, "Получает события телеметрии")
+Rel(teleConsumer, orm, "Запросы на запись пакетов событий")
+Rel(queries, orm, "Запросы на чтение")
+Rel(orm, teleDb, "Читает / пишет", "EF Core / Npgsql")
+
+@enduml
