@@ -1,0 +1,53 @@
+@startuml
+title Warmhouse — ER Diagram
+
+entity "Home" as home {
+  * id : UUID <<PK>>
+  --
+  * name : string
+}
+
+entity "Device" as device {
+  * id : UUID <<PK>>
+  --
+  * home_id : UUID <<ref>>
+  * name : string
+  * type : string
+  * status : enum
+}
+
+entity "AutomationScenario" as scenario {
+  * id : UUID <<PK>>
+  --
+  * home_id : UUID <<ref>>
+  * name : string
+  * definition : JSON
+  * is_enabled : boolean
+}
+
+entity "Command" as command {
+  * id : UUID <<PK>>
+  --
+  * device_id : UUID <<ref>>
+    scenario_id : UUID <<ref>>
+  * action : string
+  * status : enum
+}
+
+entity "TelemetryData" as reading {
+  * id : UUID <<PK>>
+  --
+  * device_id : UUID <<ref>>
+  * metric : string
+  * value : decimal
+  * unit : string
+  * recorded_at : datetime
+}
+
+home ||--o{ device : "содержит"
+home ||--o{ scenario : "имеет"
+device ||--o{ command : "получает"
+device ||--o{ reading : "передаёт"
+scenario |o--o{ command : "запускает"
+
+@enduml

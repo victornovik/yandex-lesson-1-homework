@@ -1,0 +1,78 @@
+@startuml
+title Microservice Domains and Bounded Contexts
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user, "Пользователь")
+
+System_Ext(devices, "Devices", "Отопление, свет, ворота, камеры, датчики")
+System_Ext(extTempApi, "External Temperature API")
+System_Ext(mobileGateway, "Mobile Gateway", "Push/SMS/MobileID/FlashCall оповещения")
+
+System_Boundary(warmhouse, "Warmhouse Management System") {
+
+  System_Boundary(monDomain, "Monitoring Domain") {
+    System_Boundary(monContext, "Monitoring Context") {
+      Container(teleSvc, "Telemetry Service", "", "Сбор и выдача телеметрии")
+    }
+    System_Boundary(cctvContext, "CCTV Context") {
+      Container(cctvSvc, "CCTV Service", "", "Камеры, стриминг, видеозаписи")
+    }
+  }
+
+  System_Boundary(devMgmtDomain, "Management Domain") {
+    System_Boundary(devMgmtContext, "Device Management Context") {
+      Container(devMgmt, "Device Management Service", "", "Реестр подключенных устройств, capabilities устройств, состояние, управление")
+    }
+    System_Boundary(devCatContext, "Device Catalog Context") {
+      Container(catalogSvc, "Catalog Service", "", "Каталог устройств, наборы устройств")
+    }   
+    System_Boundary(devAutoContext, "Device Automation Context") {
+      Container(autoSvc, "Automation Service", "", "Сценарии и расписание выполнения сценариев")
+    }
+    System_Boundary(homeMgmtContext, "Home Management Context") {
+      Container(homeMgmtSvc, "Home Management Service", "", "Дома, комнаты, участники управления домом")
+    }    
+  }
+
+  System_Boundary(authDomain, "Auth Subdomain") {
+    System_Boundary(authContext, "Authentication Context") {
+      Container(authSvc, "Auth Service", "", "Создание аккаунтов, проверка прав доступа, выдача токенов, RBAC")
+    }
+  }
+
+  System_Boundary(notifDomain, "Notification Subdomain") {
+    System_Boundary(notifContext, "Notification Context") {
+      Container(notifSvc, "Notification Service", "", "Отправка уведомлений пользователям")
+    }
+  }
+}
+
+' --- user
+Rel(user, authSvc, "Авторизуется в системе")
+Rel(user, homeMgmtSvc, "Настраивает локации в доме и участников управления домом")
+Rel(user, devMgmt, "Подключает новые устройства")
+Rel(user, devMgmt, "Управляет устройствами")
+Rel(user, catalogSvc, "Выбирает готовые наборы устройств")
+Rel(user, teleSvc, "Смотрит показания датчиков")
+Rel(user, cctvSvc, "Смотрит стриминговое видео и видеозаписи")
+Rel(user, autoSvc, "Настраивает сценарии автоматического выполнения")
+Rel(notifSvc, user, "Отправляет уведомления")
+
+' --- inter-services
+Rel(autoSvc, devMgmt, "Управляет устройствами по заданным сценариям")
+Rel(autoSvc, teleSvc, "Собирает телеметрию для условий срабатывания сценариев")
+
+Rel(authSvc, notifSvc, "Авторизация посредством MobileID/FlashCall")
+Rel(autoSvc, notifSvc, "Отправляет уведомления")
+Rel(devMgmt, notifSvc, "Отправляет уведомления")
+
+' --- ext-services
+Rel(teleSvc, devices, "Собирает телеметрию с устройств")
+Rel(devMgmt, devices, "Меняет состояние устройств, отправляет команды")
+Rel(teleSvc, extTempApi, "Получает информацию о температуре из внешнего API")
+Rel(extTempApi, devices, "Получает информацию о температуре от устройств")
+Rel(cctvSvc, devices, "Получает информацию от видеокамер")
+Rel(notifSvc, mobileGateway, "Посылает оповещения")
+
+@enduml

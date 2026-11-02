@@ -1,0 +1,29 @@
+@startuml
+
+title As-Is Monolith - C4 Context Diagram
+
+top to bottom direction
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+Person(user, "Home owner", "A user of Warmhouse")
+Person(admin, "Heating engineer", "Wires up home to the Warmhouse")
+
+System_Boundary(system, "Heating management") {
+  System(warmhouseSystem, "Warmhouse System", "Provides heating management API")  
+}
+
+Boundary(home, "<&home*2> Home", "Physical Boundary") {    
+    System(heating, "<&sun> Heating system", "Heating system")
+    System(sensor, "<&signal> Temperature sensor", "Temperature sensor")
+}
+
+System_Ext(temperatureApi, "Temperature Service", "Third-party service providing temperature API")
+Rel(temperatureApi, sensor, "Get temperature")
+
+Rel(user, warmhouseSystem, "Monitors temperature and manages heating remotely")
+Rel(admin, warmhouseSystem, "Wires up new sensors")
+Rel(warmhouseSystem, temperatureApi, "Fetches temperature readings")
+Rel(warmhouseSystem, heating, "Turns heating on/off")
+  
+@enduml

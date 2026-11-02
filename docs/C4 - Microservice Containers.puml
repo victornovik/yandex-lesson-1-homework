@@ -1,0 +1,100 @@
+@startuml
+title Microservice - C4 Container Diagram
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(owner, "Пользователь", "Подключает устройства сам, управляет домом, настраивает сценарии, смотрит телеметрию")
+
+System_Ext(devices, "Devices", "Отопление, свет, ворота, камеры, датчики")
+System_Ext(extTempApi, "External Temperature API")
+System_Ext(mobileGateway, "Mobile Gateway", "Push/SMS/MobileID/FlashCall оповещения")
+
+System_Boundary(warmhouse, "Warmhouse") {
+
+  Container(web, "Web-приложение", "React", "Личный кабинет")
+
+  Container(apiGw, "API Gateway", "YARP", "Маршрутизация, rate limiter")
+  Container(authSvc, "Auth Service", "Keycloak", "Создание аккаунтов, проверка прав доступа, выдача токенов, RBAC")
+  ContainerDb(authDb, "IAM DB", "PostgreSQL", "RBAC")
+
+  Container(homeSvc, "Home Management Service", "C#, ASP.NET Core, EF Core", "Дома, комнаты, участники управления домом")
+  ContainerDb(homeDb, "Home DB", "PostgreSQL")
+
+  Container(catalogSvc, "Catalog Service", "C#, ASP.NET Core", "Каталог устройств, наборы устройств")
+  ContainerDb(catalogDb, "Catalog DB", "PostgreSQL")
+
+  Container(devMgmt, "Device Management Service", "C#, ASP.NET Core, EF Core, CQRS", "Реестр подключенных устройств, capabilities устройств, состояние, управление")
+  ContainerDb(devDb, "Device DB", "PostgreSQL")  
+
+  Container(devGw, "Device Gateway", "C#, .NET Worker, ASP.NET Core, MQTT.NET", "Единая точка входа устройств, авторизация устройств")
+  ContainerQueue(mqtt, "MQTT-брокер", "MQTT", "Шина связи с устройствами через интернет")
+
+  Container(teleSvc, "Telemetry Service", "C#, ASP.NET Core, EF Core", "Сбор и выдача телеметрии")
+  ContainerDb(teleDb, "Telemetry DB", "PostgreSQL", "Временные ряды показаний")
+
+  Container(autoSvc, "Automation Service", "C#, ASP.NET Core, EF Core, Quartz.NET", "Сценарии и расписание выполнения сценариев")
+  ContainerDb(autoDb, "Automation DB", "PostgreSQL")
+
+  Container(cctvSvc, "CCTV Service", "C#, ASP.NET Core", "Камеры, стриминг, видеозаписи")
+  ContainerDb(cctvDb, "CCTV DB", "PostgreSQL", "Камеры, метаданные видеозаписей")
+  ContainerDb(cctvStore, "CCTV Storage", "S3", "Видеозаписи")
+
+  ContainerQueue(kafka, "Message Broker", "Kafka", "")
+  Container(notifSvc, "Notification Service", "C#, ASP.NET Core, EF Core", "Отправка уведомлений пользователям")
+  ContainerDb(notifDb, "Notification DB", "PostgreSQL", "Уведомления и статусы доставки")
+
+  Container(legacy, "Legacy Monolith", "Go", "Будет выводиться в EOL")
+  ContainerDb(legacyDb, "Legacy DB", "PostgreSQL", "Будет выводиться в EOL")
+}
+
+' --- user
+Rel(owner, web, "Использует", "HTTPS")
+Rel(web, apiGw, "Использует", "HTTPS")
+Rel(apiGw, authSvc, "Авторизуется в системе", "HTTPS")
+Rel(authSvc, authDb, "Читает/пишет", "SQL")
+
+' --- synchronous calls via API Gateway
+Rel(apiGw, homeSvc, "Дома, комнаты, участники", "REST")
+Rel(apiGw, catalogSvc, "Каталог устройств, комплекты устройств", "REST")
+Rel(apiGw, devMgmt, "Устройства, команды, состояние", "REST")
+Rel(apiGw, teleSvc, "Телеметрия", "REST")
+Rel(apiGw, autoSvc, "Сценарии и расписание выполнения сценариев", "REST")
+Rel(apiGw, cctvSvc, "Просмотр видео", "REST")
+Rel(apiGw, legacy, "Legacy ендпойнты", "REST")
+
+' --- storage
+Rel(homeSvc, homeDb, "Читает/пишет", "EF Core / Npgsql")
+Rel(catalogSvc, catalogDb, "Читает/пишет", "EF Core / Npgsql")
+Rel(devMgmt, devDb, "Читает/пишет", "EF Core / Npgsql")
+Rel(teleSvc, teleDb, "Читает/пишет", "EF Core / Npgsql")
+Rel(autoSvc, autoDb, "Читает/пишет", "EF Core / Npgsql")
+Rel(cctvSvc, cctvDb, "Читает/пишет", "EF Core / Npgsql")
+Rel(cctvSvc, cctvStore, "Хранит записи", "S3 API")
+Rel(notifSvc, notifDb, "Читает/пишет", "EF Core / Npgsql")
+Rel(legacy, legacyDb, "Читает/пишет", "pgx")
+
+' --- devices
+BiRel(devices, mqtt, "Телеметрия, статусы, команды", "MQTT")
+BiRel(devGw, mqtt, "Телеметрия, статусы, команды", "MQTT")
+
+' --- synchronous inter-service calls
+Rel(devMgmt, homeSvc, "Проверка членства в доме", "HTTP")
+Rel(autoSvc, homeSvc, "Проверка прав на запуск сценариев дома", "HTTP")
+Rel(teleSvc, homeSvc, "Проверка прав на телеметрию дома", "HTTP")
+Rel(autoSvc, devMgmt, "Команды из сценариев", "HTTP")
+Rel(authSvc, notifSvc, "Отправляет уведомления", "HTTP")
+Rel(autoSvc, notifSvc, "Отправляет уведомления", "HTTP")
+
+' --- synchronous external service calls
+Rel(devGw, extTempApi, "Опрашивает", "HTTPS")
+Rel(notifSvc, mobileGateway, "Отправляет уведомления", "HTTPS")
+Rel(mobileGateway, owner, "Отправляет уведомления", "SMS/MobileID/FlashCall")
+
+' --- asynchronous events
+BiRel(devGw, kafka, "Телеметрия, события от устройств, команды для устройств", "Kafka")
+BiRel(devMgmt, kafka, "Команды и состояния для устройств, результаты от устройств", "Kafka")
+BiRel(kafka, cctvSvc, "Потребляет события с камер, отправляет команды камерам", "Kafka")
+Rel(kafka, teleSvc, "Потребляет телеметрию", "Kafka")
+Rel(kafka, autoSvc, "Потребляет телеметрию и события", "Kafka")
+
+@enduml

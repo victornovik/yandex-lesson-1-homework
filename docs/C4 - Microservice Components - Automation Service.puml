@@ -1,0 +1,39 @@
+@startuml
+title Automation Service — C4 Component Diagram
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container(apiGw, "API Gateway", "YARP", "Настройка сценариев")
+Container(homeSvc, "Home Management Service", "ASP.NET Core", "Членство и права в доме")
+Container(devMgmt, "Device Management Service", "ASP.NET Core", "Принимает команды и проверяет capabilities устройств")
+note bottom of devMgmt
+    Команда принимается асинхронно.
+    Возвращает HTTP 202 Accepted и commandId.
+end note
+
+Container(notifSvc, "Notification Service", "ASP.NET Core", "Принимает запросы на уведомления")
+ContainerQueue(kafka, "Message Broker", "Kafka", "Телеметрия и события устройств")
+ContainerDb(autoDb, "Automation DB", "PostgreSQL", "Сценарии, критерии запуска, расписания")
+
+Container_Boundary(autoSvc, "Automation Service") {
+  Component(api, "Automation API Controller", "ASP.NET Core", "CRUD сценариев, критериев запуска, расписания")
+  Component(ruleMng, "Rule Manager", "C#", "Правила запуска сценариев.")
+  Component(triggerMng, "Trigger Manager", "Kafka / Quartz.NET", "Запуск по наступлению событий от устройств и по расписанию")
+  Component(executor, "Action Executor", "C#", "Раздает команды сервисам Device Management и Notification.")
+  Component(orm, "Automation Persistence", "EF Core / Npgsql", "Хранит сценарии, правила и расписания")
+}
+
+Rel(apiGw, api, "Настройка сценариев", "REST")
+Rel(api, homeSvc, "Проверяет доступ к дому", "REST")
+Rel(api, ruleMng, "Создаёт / изменяет сценарий")
+Rel(api, triggerMng, "Настраивает расписание")
+Rel(ruleMng, orm, "Сохраняет сценарий")
+Rel(kafka, triggerMng, "События устройств", "Kafka")
+Rel(triggerMng, orm, "Читает расписания. Сохраняет результаты команд")
+Rel(triggerMng, executor, "Передаёт действия при выполнении условий")
+Rel(executor, orm, "Сохраняет результаты действий")
+Rel(executor, devMgmt, "Отправляет команды в устройства", "REST")
+Rel(executor, notifSvc, "Отправляет запрос на оповещение", "REST")
+Rel(orm, autoDb, "Читает / пишет", "EF Core / Npgsql")
+
+@enduml

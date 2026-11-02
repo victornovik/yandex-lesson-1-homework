@@ -1,0 +1,41 @@
+@startuml
+title Device Management Service — C4 Component Diagram
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container(apiGw, "API Gateway", "YARP", "Передаёт запросы и JWT пользователя")
+Container(autoSvc, "Automation Service", "ASP.NET Core", "Выполняет автоматические сценарии")
+Container(homeSvc, "Home Management Service", "ASP.NET Core", "Членство и права на устройства в доме")
+ContainerQueue(kafka, "Message Broker", "Kafka", "Команды, их результаты, регистрация устройств, состояния")
+ContainerDb(devDb, "Device DB", "PostgreSQL", "Устройства, их capabilities, состояния и команды")
+
+Container_Boundary(devMgmt, "Device Management Service") {
+  Component(api, "Device API Controller", "ASP.NET Core", "Подключение, отключение, просмотр устройств. Отправка команд.")
+  note bottom of api
+    Команда принимается асинхронно.
+    Возвращает HTTP 202 Accepted и commandId.
+  end note
+
+  Component(access, "Home Policy", "C# / IHomeAuthorizationHandler", "Авторизация операций в доме")  
+  Component(commands, "Device Command Handlers", "C# / CQRS С-side", "Самостоятельное подключение устройств. Проверка команд.")
+  Component(queries, "Device Query Handlers", "C# / CQRS Q-side", "Реестр и статус команд.")
+  Component(events, "Device Event Handler", "Kafka / BackgroundService", "Обрабатывает статусы утсройств и результаты команд")
+  Component(orm, "Device Persistence", "EF Core / Npgsql", "DbContext и Repository layer")
+  Component(publisher, "Device Event Publisher", "Kafka", "Публикует команды и события добавления\удаления устройств")
+}
+
+Rel(apiGw, api, "Регистрация, управление, просмотр", "REST")
+Rel(autoSvc, api, "Команды", "REST")
+Rel(api, access, "Проверяет доступ к дому устройства")
+Rel(access, homeSvc, "Проверяет членство и ролёвку дома", "REST")
+Rel(api, commands, "Изменяет устройства и отдает команду")
+Rel(api, queries, "Читает устройства и статусы")
+Rel(commands, orm, "Сохраняет устройства и команды")
+Rel(commands, publisher, "Передаёт команды и события добавления\удаления устройств")
+Rel(queries, orm, "Читает статус команд и состояние устройств")
+Rel(kafka, events, "Публикует результаты команд и состояния устройств", "Kafka")
+Rel(events, orm, "Обновляет состояние и статус команд")
+Rel(orm, devDb, "Читает / пишет", "EF Core / Npgsql")
+Rel(publisher, kafka, "Публикует команды и события добавления\удаления устройств", "Kafka")
+
+@enduml
